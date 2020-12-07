@@ -7,11 +7,21 @@
 use frame_support::{decl_module, decl_storage, decl_event, decl_error, dispatch, traits::Get};
 use frame_system::ensure_signed;
 
+use codec::{Decode, Encode};
+//use serde::{Deserialize, Serialize};
+
 #[cfg(test)]
 mod mock;
 
 #[cfg(test)]
 mod tests;
+
+#[derive(Clone, Eq, PartialEq, Default, Encode, Decode, Hash, Debug)]
+//#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+pub struct MyData {
+    pub number1: u32,
+    pub number2: u32,
+}
 
 /// Configure the pallet by specifying the parameters and types on which it depends.
 pub trait Trait: frame_system::Trait {
@@ -29,6 +39,7 @@ decl_storage! {
 		// Learn more about declaring storage items:
 		// https://substrate.dev/docs/en/knowledgebase/runtime/storage#declaring-storage-items
 		Something get(fn something): Option<u32>;
+		DataOfMine : map hasher(blake2_128_concat) T::AccountId => Option<MyData>;
 	}
 }
 
@@ -39,6 +50,7 @@ decl_event!(
 		/// Event documentation should end with an array that provides descriptive names for event
 		/// parameters. [something, who]
 		SomethingStored(u32, AccountId),
+		MyDataStored(u32,u32,AccountId),
 	}
 );
 
@@ -62,6 +74,13 @@ decl_module! {
 
 		// Events must be initialized if they are used by the pallet.
 		fn deposit_event() = default;
+
+		#[weight = 10_000 + T::DbWeight::get().writes(1)]
+		pub fn set_mydata(origin, mydata: MyData) -> dispatch::DispatchResult {
+			let who = ensure_signed(origin)?;
+			<DataOfMine<T>>::insert(who,mydata);
+			Ok(())
+		}
 
 		/// An example dispatchable that takes a singles value as a parameter, writes the value to
 		/// storage and emits an event. This function must be dispatched by a signed extrinsic.
